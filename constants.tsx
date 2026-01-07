@@ -33,6 +33,13 @@ export const getStatus1ChartColor = (status: string) => {
   return '#a855f7';
 };
 
+// 현재 날짜를 기준으로 테스트 데이터를 생성하기 위한 헬퍼
+const getISO = (offsetDays: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().split('T')[0];
+};
+
 export const MOCK_PROJECTS = [
   {
     id: '1',
@@ -41,11 +48,11 @@ export const MOCK_PROJECTS = [
     description: 'LLM 기반 상담 자동화 솔루션 도입 프로젝트',
     status1: 'IN_PROGRESS',
     status2: '개발',
-    startDate: '2024-03-01',
-    endDate: '2024-08-30',
+    startDate: getISO(-10),
+    endDate: getISO(60),
     milestones: [
-      { id: 'm1', title: '인프라 구축 완료', startDate: '2024-03-01', endDate: '2024-03-15', status: 'COMPLETED' },
-      { id: 'm2', title: '모델 파인튜닝', startDate: '2024-04-01', endDate: '2024-05-30', status: 'UPCOMING' }
+      { id: 'm1', title: '인프라 구축 완료', startDate: getISO(-5), endDate: getISO(5), status: 'COMPLETED' },
+      { id: 'm2', title: '모델 파인튜닝', startDate: getISO(10), endDate: getISO(25), status: 'UPCOMING' }
     ],
     weeklyReports: [],
   }

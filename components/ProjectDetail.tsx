@@ -16,10 +16,13 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MILESTONES' | 'CHARTER' | 'REPORT' | 'RETRO'>('OVERVIEW');
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // States for editing name and description
+  // States for editing project info
   const [isEditingHeader, setIsEditingHeader] = useState(false);
   const [editedName, setEditedName] = useState(project.name);
   const [editedDescription, setEditedDescription] = useState(project.description);
+  const [editedManager, setEditedManager] = useState(project.manager);
+  const [editedStartDate, setEditedStartDate] = useState(project.startDate);
+  const [editedEndDate, setEditedEndDate] = useState(project.endDate);
 
   const handleStatusChange = (field: 'status1' | 'status2', val: string) => {
     onUpdate({ ...project, [field]: val });
@@ -29,7 +32,10 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
     onUpdate({
       ...project,
       name: editedName,
-      description: editedDescription
+      description: editedDescription,
+      manager: editedManager,
+      startDate: editedStartDate,
+      endDate: editedEndDate
     });
     setIsEditingHeader(false);
   };
@@ -37,6 +43,9 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
   const handleCancelHeader = () => {
     setEditedName(project.name);
     setEditedDescription(project.description);
+    setEditedManager(project.manager);
+    setEditedStartDate(project.startDate);
+    setEditedEndDate(project.endDate);
     setIsEditingHeader(false);
   };
 
@@ -104,20 +113,6 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
                   onChange={(e) => setEditedDescription(e.target.value)}
                   className="w-full p-2 text-sm border border-blue-200 rounded-lg bg-blue-50/30 focus:ring-2 focus:ring-blue-500 outline-none h-20 resize-none"
                 />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button 
-                  onClick={handleCancelHeader}
-                  className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700"
-                >
-                  취소
-                </button>
-                <button 
-                  onClick={handleSaveHeader}
-                  className="px-4 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all"
-                >
-                  저장
-                </button>
               </div>
             </div>
           )}
@@ -206,32 +201,86 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
                    {project.milestones.length > 0 ? project.milestones.slice(0, 3).map(m => (
                      <div key={m.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg text-sm border border-slate-100 hover:border-blue-100 transition-all">
                        <span className="font-medium text-slate-700">{m.title}</span>
-                       <span className="text-slate-400 text-[10px] font-mono">{m.endDate}</span>
+                       <span className="text-slate-400 text-[10px] font-mono">{m.startDate} ~ {m.endDate}</span>
                      </div>
                    )) : <p className="text-xs text-slate-400 italic text-center py-4">마일스톤이 없습니다.</p>}
                    <button onClick={() => setActiveTab('MILESTONES')} className="w-full text-center text-xs text-blue-600 mt-3 font-bold py-1 hover:bg-blue-50 rounded transition-colors">마일스톤 전체 보기</button>
                 </div>
               </div>
 
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h3 className="font-semibold mb-2 text-slate-800">프로젝트 요약</h3>
+              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative group/summary">
+                <h3 className="font-semibold mb-2 text-slate-800 flex justify-between items-center">
+                  프로젝트 요약
+                  {!isEditingHeader && (
+                    <button 
+                      onClick={() => setIsEditingHeader(true)}
+                      className="text-[10px] font-bold text-slate-400 hover:text-blue-600 transition-colors"
+                    >
+                      수정
+                    </button>
+                  )}
+                </h3>
                 <div className="space-y-3">
-                  <div className="flex justify-between text-xs py-2 border-b border-slate-50">
-                    <span className="text-slate-400">책임 PM</span>
-                    <span className="font-bold text-slate-700">{project.manager}</span>
+                  <div className="flex flex-col py-2 border-b border-slate-50">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">책임 PM</span>
+                    {!isEditingHeader ? (
+                      <span className="font-bold text-slate-700">{project.manager}</span>
+                    ) : (
+                      <input 
+                        type="text" 
+                        value={editedManager} 
+                        onChange={e => setEditedManager(e.target.value)}
+                        className="w-full p-1.5 text-xs border border-blue-100 rounded bg-blue-50/30 outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    )}
                   </div>
-                  <div className="flex justify-between text-xs py-2 border-b border-slate-50">
-                    <span className="text-slate-400">시작 날짜</span>
-                    <span className="font-bold text-slate-700">{project.startDate}</span>
+                  <div className="flex flex-col py-2 border-b border-slate-50">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">시작 날짜</span>
+                    {!isEditingHeader ? (
+                      <span className="font-bold text-slate-700">{project.startDate}</span>
+                    ) : (
+                      <input 
+                        type="date" 
+                        value={editedStartDate} 
+                        onChange={e => setEditedStartDate(e.target.value)}
+                        className="w-full p-1.5 text-xs border border-blue-100 rounded bg-blue-50/30 outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    )}
                   </div>
-                  <div className="flex justify-between text-xs py-2 border-b border-slate-50">
-                    <span className="text-slate-400">종료 예정</span>
-                    <span className="font-bold text-slate-700">{project.endDate}</span>
+                  <div className="flex flex-col py-2 border-b border-slate-50">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">종료 예정</span>
+                    {!isEditingHeader ? (
+                      <span className="font-bold text-slate-700">{project.endDate}</span>
+                    ) : (
+                      <input 
+                        type="date" 
+                        value={editedEndDate} 
+                        onChange={e => setEditedEndDate(e.target.value)}
+                        className="w-full p-1.5 text-xs border border-blue-100 rounded bg-blue-50/30 outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    )}
                   </div>
                   <div className="flex justify-between text-xs py-2">
-                    <span className="text-slate-400">주간 보고 횟수</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">주간 보고 횟수</span>
                     <span className="font-bold text-slate-700">{project.weeklyReports.length}회</span>
                   </div>
+
+                  {isEditingHeader && (
+                    <div className="flex gap-2 justify-end pt-2 animate-fadeIn">
+                      <button 
+                        onClick={handleCancelHeader}
+                        className="px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:text-slate-700"
+                      >
+                        취소
+                      </button>
+                      <button 
+                        onClick={handleSaveHeader}
+                        className="px-4 py-1.5 text-[11px] font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all"
+                      >
+                        변경사항 저장
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -241,7 +290,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
         {activeTab === 'MILESTONES' && (
           <MilestoneView 
             milestones={project.milestones} 
-            onAdd={(m) => onUpdate({...project, milestones: [...project.milestones, m]})} 
+            onUpdateMilestones={(newList) => onUpdate({...project, milestones: newList})} 
           />
         )}
 
