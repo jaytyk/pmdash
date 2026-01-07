@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { ProjectDetail } from './components/ProjectDetail';
@@ -16,12 +16,15 @@ const App: React.FC = () => {
     activeView: 'DASHBOARD'
   });
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const handleSelectProject = (id: string | null) => {
     setState(prev => ({ 
       ...prev, 
       selectedProjectId: id, 
       activeView: id ? 'PROJECT_DETAIL' : 'DASHBOARD' 
     }));
+    setIsSidebarOpen(false); // 모바일에서 선택 시 닫기
   };
 
   const handleNavigate = (view: 'DASHBOARD' | 'SETTINGS') => {
@@ -30,6 +33,7 @@ const App: React.FC = () => {
       activeView: view, 
       selectedProjectId: null 
     }));
+    setIsSidebarOpen(false); // 모바일에서 선택 시 닫기
   };
 
   const handleUpdateProject = (updated: Project) => {
@@ -37,6 +41,20 @@ const App: React.FC = () => {
       ...prev,
       projects: prev.projects.map(p => p.id === updated.id ? updated : p)
     }));
+  };
+
+  const handleDeleteProject = (id: string) => {
+    // window.confirm을 명시적으로 호출하여 브라우저 대화상자 보장
+    const isConfirmed = window.confirm('이 프로젝트와 관련된 모든 데이터(마일스톤, 보고서 등)가 영구적으로 삭제됩니다. 정말 삭제하시겠습니까?');
+    
+    if (isConfirmed) {
+      setState(prev => ({
+        ...prev,
+        projects: prev.projects.filter(p => p.id !== id),
+        selectedProjectId: null,
+        activeView: 'DASHBOARD'
+      }));
+    }
   };
 
   const handleUpdateStatus1 = (newList: string[]) => {
@@ -50,21 +68,36 @@ const App: React.FC = () => {
   const selectedProject = state.projects.find(p => p.id === state.selectedProjectId);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-slate-50 flex flex-col lg:flex-row">
+      {/* Mobile Header */}
+      <div className="lg:hidden bg-slate-900 text-white p-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+        <h1 className="font-bold">PM Master</h1>
+        <button 
+          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          className="p-2 hover:bg-slate-800 rounded"
+        >
+          {isSidebarOpen ? '✕' : '☰'}
+        </button>
+      </div>
+
+      {/* Sidebar with Drawer Logic */}
       <Sidebar 
         projects={state.projects} 
         selectedId={state.selectedProjectId}
         onSelectProject={handleSelectProject}
         onNavigate={handleNavigate}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
       
-      <main className="flex-1 ml-64 p-8 lg:p-12 transition-all duration-300">
+      {/* Main Content Area */}
+      <main className={`flex-1 transition-all duration-300 p-4 md:p-8 lg:p-12 lg:ml-64`}>
         <div className="max-w-7xl mx-auto">
           {state.activeView === 'DASHBOARD' && (
             <Dashboard 
               projects={state.projects} 
               status1List={state.customStatus1}
-              status2List={state.customStatus2} // 추가: 2단계 리스트 전달
+              status2List={state.customStatus2}
               onSelect={handleSelectProject} 
             />
           )}
@@ -73,6 +106,7 @@ const App: React.FC = () => {
             <ProjectDetail 
               project={selectedProject} 
               onUpdate={handleUpdateProject}
+              onDelete={handleDeleteProject}
               status1Options={state.customStatus1}
               status2Options={state.customStatus2}
             />
@@ -89,7 +123,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      {/* Persistent Add Project Floating Button */}
+      {/* Floating Action Button */}
       {state.activeView === 'DASHBOARD' && (
         <button 
           onClick={() => {
@@ -107,7 +141,7 @@ const App: React.FC = () => {
             };
             setState(prev => ({ ...prev, projects: [...prev.projects, newProj] }));
           }}
-          className="fixed bottom-10 right-10 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl hover:bg-blue-700 flex items-center justify-center text-3xl font-light transition-transform hover:scale-110 active:scale-95 z-40"
+          className="fixed bottom-6 right-6 md:bottom-10 md:right-10 w-12 h-12 md:w-14 md:h-14 bg-blue-600 text-white rounded-full shadow-2xl hover:bg-blue-700 flex items-center justify-center text-2xl md:text-3xl font-light transition-transform hover:scale-110 active:scale-95 z-40"
         >
           +
         </button>

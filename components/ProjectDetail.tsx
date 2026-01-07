@@ -8,16 +8,16 @@ import { getStatus1Color } from '../constants';
 interface ProjectDetailProps {
   project: Project;
   onUpdate: (updated: Project) => void;
+  onDelete: (id: string) => void;
   status1Options: string[];
   status2Options: string[];
 }
 
-export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate, status1Options, status2Options }) => {
+export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate, onDelete, status1Options, status2Options }) => {
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MILESTONES' | 'CHARTER' | 'REPORT' | 'RETRO'>('OVERVIEW');
   const [isGenerating, setIsGenerating] = useState(false);
-  
-  // States for editing project info
   const [isEditingHeader, setIsEditingHeader] = useState(false);
+  
   const [editedName, setEditedName] = useState(project.name);
   const [editedDescription, setEditedDescription] = useState(project.description);
   const [editedManager, setEditedManager] = useState(project.manager);
@@ -29,40 +29,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
   };
 
   const handleSaveHeader = () => {
-    onUpdate({
-      ...project,
-      name: editedName,
-      description: editedDescription,
-      manager: editedManager,
-      startDate: editedStartDate,
-      endDate: editedEndDate
-    });
-    setIsEditingHeader(false);
-  };
-
-  const handleCancelHeader = () => {
-    setEditedName(project.name);
-    setEditedDescription(project.description);
-    setEditedManager(project.manager);
-    setEditedStartDate(project.startDate);
-    setEditedEndDate(project.endDate);
+    onUpdate({ ...project, name: editedName, description: editedDescription, manager: editedManager, startDate: editedStartDate, endDate: editedEndDate });
     setIsEditingHeader(false);
   };
 
   const handleAutoGenerate = async (type: any) => {
     setIsGenerating(true);
     const content = await generateTemplate(type, {
-      name: project.name,
-      description: project.description,
-      status: `${project.status1} / ${project.status2}`
+      name: project.name, description: project.description, status: `${project.status1} / ${project.status2}`
     });
-    
-    const fieldMap: any = {
-      CHARTER: 'charter',
-      REQUIREMENTS: 'requirements',
-      RETROSPECTIVE: 'retrospective'
-    };
-    
+    const fieldMap: any = { CHARTER: 'charter', REQUIREMENTS: 'requirements', RETROSPECTIVE: 'retrospective' };
     if (type === 'WEEKLY_REPORT') {
       const newReport = { id: Date.now().toString(), date: new Date().toISOString().split('T')[0], content };
       onUpdate({ ...project, weeklyReports: [newReport, ...project.weeklyReports] });
@@ -74,88 +50,71 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
 
   return (
     <div className="space-y-6 animate-fadeIn">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start bg-white p-6 rounded-xl border border-slate-200 shadow-sm gap-6 relative group/header">
-        <div className="flex-1 w-full">
+      {/* Responsive Header Card */}
+      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col xl:flex-row gap-6 relative overflow-hidden">
+        <div className="flex-1 space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-2xl font-bold text-slate-900">{project.name}</h2>
+            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${getStatus1Color(project.status1)}`}>
+              {project.status1}
+            </div>
+            {!isEditingHeader && (
+              <button onClick={() => setIsEditingHeader(true)} className="p-1.5 hover:bg-slate-100 rounded text-slate-400 transition-colors" title="헤더 수정">✏️</button>
+            )}
+          </div>
           {!isEditingHeader ? (
-            <>
-              <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-2xl font-bold text-slate-900">{project.name}</h2>
-                <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase border ${getStatus1Color(project.status1)}`}>
-                  {project.status1}
-                </div>
-                <button 
-                  onClick={() => setIsEditingHeader(true)}
-                  className="opacity-0 group-hover/header:opacity-100 transition-opacity p-1 hover:bg-slate-100 rounded text-slate-400"
-                  title="정보 수정"
-                >
-                  <span className="text-xs">✏️</span>
-                </button>
-              </div>
-              <p className="text-slate-500 text-sm max-w-2xl">{project.description}</p>
-            </>
+            <p className="text-slate-500 text-sm leading-relaxed">{project.description}</p>
           ) : (
-            <div className="space-y-3 animate-slideDown">
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">프로젝트 이름</label>
-                <input 
-                  type="text" 
-                  value={editedName}
-                  onChange={(e) => setEditedName(e.target.value)}
-                  className="w-full p-2 text-lg font-bold border border-blue-200 rounded-lg bg-blue-50/30 focus:ring-2 focus:ring-blue-500 outline-none"
-                  autoFocus
-                />
-              </div>
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">프로젝트 설명</label>
-                <textarea 
-                  value={editedDescription}
-                  onChange={(e) => setEditedDescription(e.target.value)}
-                  className="w-full p-2 text-sm border border-blue-200 rounded-lg bg-blue-50/30 focus:ring-2 focus:ring-blue-500 outline-none h-20 resize-none"
-                />
+            <div className="space-y-4 animate-slideDown">
+              <input value={editedName} onChange={e => setEditedName(e.target.value)} className="w-full p-2.5 text-sm border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="프로젝트명" />
+              <textarea value={editedDescription} onChange={e => setEditedDescription(e.target.value)} className="w-full p-2.5 text-sm border border-blue-200 rounded-xl h-24 outline-none focus:ring-2 focus:ring-blue-500" placeholder="설명" />
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setIsEditingHeader(false)} className="px-4 py-2 text-xs font-bold text-slate-400">취소</button>
+                <button onClick={handleSaveHeader} className="px-4 py-2 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">저장</button>
               </div>
             </div>
           )}
         </div>
-        
-        <div className="flex flex-wrap gap-4 min-w-[320px] pt-2 md:pt-0">
-          <div className="flex-1 flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">대분류 상태 (1depth)</label>
-            <select 
-              value={project.status1} 
-              onChange={(e) => handleStatusChange('status1', e.target.value)}
-              className="w-full p-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none font-semibold transition-all cursor-pointer"
-            >
+
+        <div className="xl:w-80 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4 pt-4 xl:pt-0 xl:pl-6 xl:border-l border-slate-100">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">대분류 상태</label>
+            <select value={project.status1} onChange={e => handleStatusChange('status1', e.target.value)} className="p-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
               {status1Options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
           </div>
-          <div className="flex-1 flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">상세 프로세스 (2depth)</label>
-            <select 
-              value={project.status2} 
-              onChange={(e) => handleStatusChange('status2', e.target.value)}
-              className="w-full p-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-500 outline-none font-semibold transition-all cursor-pointer"
-            >
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">상세 공정</label>
+            <select value={project.status2} onChange={e => handleStatusChange('status2', e.target.value)} className="p-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50 font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-shadow">
               {status2Options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
             </select>
+          </div>
+          
+          <div className="pt-2">
+            <button 
+              type="button"
+              onClick={() => onDelete(project.id)}
+              className="w-full py-2 px-4 border border-red-100 text-red-500 text-[10px] font-black uppercase tracking-tighter rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2 group"
+            >
+              <span className="group-hover:scale-110 transition-transform">🗑️</span> 프로젝트 삭제
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-slate-200 overflow-x-auto bg-white/50 backdrop-blur-sm sticky top-0 z-10">
+      {/* Tabs Menu - Horizontal Scroll on Mobile */}
+      <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar bg-slate-50/50 -mx-4 px-4 sticky top-0 md:top-[72px] lg:top-0 z-30">
         {[
           { id: 'OVERVIEW', label: '개요', icon: '📝' },
           { id: 'MILESTONES', label: '마일스톤', icon: '📅' },
-          { id: 'CHARTER', label: 'Project Charter', icon: '📜' },
-          { id: 'REPORT', label: '주간 보고', icon: '📊' },
+          { id: 'CHARTER', label: '차터', icon: '📜' },
+          { id: 'REPORT', label: '보고', icon: '📊' },
           { id: 'RETRO', label: '회고', icon: '💡' },
         ].map(tab => (
           <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
-              activeTab === tab.id ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+            key={tab.id} onClick={() => setActiveTab(tab.id as any)}
+            className={`px-5 py-4 text-sm font-bold border-b-2 transition-all flex items-center gap-2 whitespace-nowrap ${
+              activeTab === tab.id ? 'border-blue-600 text-blue-600 bg-white' : 'border-transparent text-slate-400 hover:text-slate-600'
             }`}
           >
             <span>{tab.icon}</span> {tab.label}
@@ -163,124 +122,37 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
         ))}
       </div>
 
-      {/* Content Area */}
-      <div className="min-h-[500px]">
+      {/* Tab Contents */}
+      <div className="min-h-[400px]">
         {activeTab === 'OVERVIEW' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-              <h3 className="font-semibold mb-4 flex justify-between items-center text-slate-800">
-                상세 정보 및 요구사항
-                <button 
-                  onClick={() => handleAutoGenerate('REQUIREMENTS')}
-                  className="text-xs text-blue-600 hover:underline font-bold bg-blue-50 px-2 py-1 rounded"
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? '생성 중...' : '✨ AI로 요구사항 생성'}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-slate-800">상세 요구사항</h3>
+                <button onClick={() => handleAutoGenerate('REQUIREMENTS')} className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg uppercase tracking-tighter hover:bg-blue-100 transition-colors" disabled={isGenerating}>
+                  {isGenerating ? 'AI 분석 중...' : '✨ AI 생성'}
                 </button>
-              </h3>
-              <div className="prose prose-sm max-w-none text-slate-600">
-                {project.requirements ? (
-                  <div className="whitespace-pre-wrap bg-slate-50 p-4 rounded-lg border border-slate-100 leading-relaxed">{project.requirements}</div>
-                ) : (
-                  <div className="p-8 text-center bg-slate-50 rounded-lg border border-dashed border-slate-200">
-                    <p className="italic text-slate-400 mb-2 text-xs">요구사항 내용이 없습니다.</p>
-                    <button 
-                      onClick={() => handleAutoGenerate('REQUIREMENTS')}
-                      className="text-xs text-blue-500 font-bold hover:text-blue-700"
-                    >
-                      AI에게 도움을 받아보세요
-                    </button>
-                  </div>
-                )}
+              </div>
+              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 min-h-[200px] text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+                {project.requirements || '등록된 요구사항이 없습니다. AI를 통해 초안을 작성해보세요.'}
               </div>
             </div>
+            
             <div className="space-y-6">
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h3 className="font-semibold mb-4 text-slate-800">최근 마일스톤</h3>
-                <div className="space-y-2">
-                   {project.milestones.length > 0 ? project.milestones.slice(0, 3).map(m => (
-                     <div key={m.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg text-sm border border-slate-100 hover:border-blue-100 transition-all">
-                       <span className="font-medium text-slate-700">{m.title}</span>
-                       <span className="text-slate-400 text-[10px] font-mono">{m.startDate} ~ {m.endDate}</span>
-                     </div>
-                   )) : <p className="text-xs text-slate-400 italic text-center py-4">마일스톤이 없습니다.</p>}
-                   <button onClick={() => setActiveTab('MILESTONES')} className="w-full text-center text-xs text-blue-600 mt-3 font-bold py-1 hover:bg-blue-50 rounded transition-colors">마일스톤 전체 보기</button>
-                </div>
-              </div>
-
-              <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative group/summary">
-                <h3 className="font-semibold mb-2 text-slate-800 flex justify-between items-center">
-                  프로젝트 요약
-                  {!isEditingHeader && (
-                    <button 
-                      onClick={() => setIsEditingHeader(true)}
-                      className="text-[10px] font-bold text-slate-400 hover:text-blue-600 transition-colors"
-                    >
-                      수정
-                    </button>
-                  )}
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex flex-col py-2 border-b border-slate-50">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">책임 PM</span>
-                    {!isEditingHeader ? (
-                      <span className="font-bold text-slate-700">{project.manager}</span>
-                    ) : (
-                      <input 
-                        type="text" 
-                        value={editedManager} 
-                        onChange={e => setEditedManager(e.target.value)}
-                        className="w-full p-1.5 text-xs border border-blue-100 rounded bg-blue-50/30 outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-col py-2 border-b border-slate-50">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">시작 날짜</span>
-                    {!isEditingHeader ? (
-                      <span className="font-bold text-slate-700">{project.startDate}</span>
-                    ) : (
-                      <input 
-                        type="date" 
-                        value={editedStartDate} 
-                        onChange={e => setEditedStartDate(e.target.value)}
-                        className="w-full p-1.5 text-xs border border-blue-100 rounded bg-blue-50/30 outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    )}
-                  </div>
-                  <div className="flex flex-col py-2 border-b border-slate-50">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">종료 예정</span>
-                    {!isEditingHeader ? (
-                      <span className="font-bold text-slate-700">{project.endDate}</span>
-                    ) : (
-                      <input 
-                        type="date" 
-                        value={editedEndDate} 
-                        onChange={e => setEditedEndDate(e.target.value)}
-                        className="w-full p-1.5 text-xs border border-blue-100 rounded bg-blue-50/30 outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                    )}
-                  </div>
-                  <div className="flex justify-between text-xs py-2">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">주간 보고 횟수</span>
-                    <span className="font-bold text-slate-700">{project.weeklyReports.length}회</span>
-                  </div>
-
-                  {isEditingHeader && (
-                    <div className="flex gap-2 justify-end pt-2 animate-fadeIn">
-                      <button 
-                        onClick={handleCancelHeader}
-                        className="px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:text-slate-700"
-                      >
-                        취소
-                      </button>
-                      <button 
-                        onClick={handleSaveHeader}
-                        className="px-4 py-1.5 text-[11px] font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md transition-all"
-                      >
-                        변경사항 저장
-                      </button>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <h3 className="font-bold text-slate-800 mb-4">프로젝트 정보</h3>
+                <div className="space-y-4">
+                  {[
+                    { label: '담당 PM', val: project.manager },
+                    { label: '시작일', val: project.startDate },
+                    { label: '마감예정', val: project.endDate },
+                    { label: '주간보고', val: `${project.weeklyReports.length}회 작성됨` }
+                  ].map((item, i) => (
+                    <div key={i} className="flex justify-between items-end border-b border-slate-50 pb-2">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</span>
+                      <span className="text-sm font-bold text-slate-700">{item.val}</span>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>
@@ -288,99 +160,50 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
         )}
 
         {activeTab === 'MILESTONES' && (
-          <MilestoneView 
-            milestones={project.milestones} 
-            onUpdateMilestones={(newList) => onUpdate({...project, milestones: newList})} 
-          />
+          <MilestoneView milestones={project.milestones} onUpdateMilestones={(newList) => onUpdate({...project, milestones: newList})} />
         )}
 
         {activeTab === 'CHARTER' && (
-           <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm max-w-4xl mx-auto">
-             <div className="flex justify-between items-center mb-6">
+           <div className="bg-white p-6 md:p-10 rounded-2xl border border-slate-200 shadow-sm max-w-4xl mx-auto space-y-6">
+             <div className="flex justify-between items-center">
                <h3 className="text-xl font-bold text-slate-800">Project Charter</h3>
-               <button 
-                 onClick={() => handleAutoGenerate('CHARTER')}
-                 className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:bg-slate-300 shadow-md font-bold transition-all flex items-center gap-2"
-                 disabled={isGenerating}
-               >
-                 {isGenerating ? 'AI가 작성 중...' : '✨ AI 자동 생성'}
+               <button onClick={() => handleAutoGenerate('CHARTER')} className="px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100" disabled={isGenerating}>
+                 {isGenerating ? 'AI 생성 중...' : '✨ AI 자동 작성'}
                </button>
              </div>
-             <div className="prose prose-blue max-w-none">
-                {project.charter ? (
-                  <div className="p-8 bg-slate-50 border border-slate-100 rounded-xl font-sans text-sm leading-relaxed whitespace-pre-wrap text-slate-700 shadow-inner">{project.charter}</div>
-                ) : (
-                  <div className="text-center py-24 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/30">
-                    <span className="text-4xl block mb-4">📜</span>
-                    <p className="text-sm font-medium mb-4">아직 생성된 Charter가 없습니다.</p>
-                    <button 
-                      onClick={() => handleAutoGenerate('CHARTER')}
-                      className="px-6 py-2 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg hover:bg-slate-200 transition-all"
-                    >
-                      AI에게 Charter 작성 요청하기
-                    </button>
-                  </div>
-                )}
+             <div className="p-6 md:p-8 bg-slate-50 rounded-xl text-sm leading-relaxed text-slate-700 whitespace-pre-wrap border border-slate-100">
+                {project.charter || '프로젝트 헌장(Charter)이 아직 작성되지 않았습니다.'}
              </div>
            </div>
         )}
 
         {activeTab === 'REPORT' && (
-           <div className="space-y-6">
-             <div className="flex justify-between items-center">
-                <h3 className="text-xl font-bold text-slate-800">주간 활동 보고</h3>
-                <button 
-                  onClick={() => handleAutoGenerate('WEEKLY_REPORT')}
-                  className="px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-black font-bold shadow-md transition-all flex items-center gap-2"
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? '작성 중...' : '✨ 신규 주간 보고 생성'}
-                </button>
-             </div>
-             <div className="grid gap-6">
-                {project.weeklyReports.map(report => (
-                  <div key={report.id} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-50">
-                      <div className="flex items-center gap-3">
-                        <span className="p-2 bg-blue-50 text-blue-600 rounded-lg text-xs">📅</span>
-                        <span className="font-bold text-slate-900">{report.date} 주간 보고</span>
-                      </div>
-                      <span className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">PM: {project.manager}</span>
-                    </div>
-                    <div className="text-sm text-slate-600 whitespace-pre-wrap leading-relaxed bg-slate-50/50 p-4 rounded-lg">{report.content}</div>
-                  </div>
-                ))}
-                {project.weeklyReports.length === 0 && (
-                  <div className="text-center py-24 bg-white rounded-xl border border-dashed border-slate-300 text-slate-400">
-                    <span className="text-4xl block mb-4">📊</span>
-                    리포트 내역이 없습니다.
-                  </div>
-                )}
-             </div>
+           <div className="max-w-3xl mx-auto space-y-4">
+             <button onClick={() => handleAutoGenerate('WEEKLY_REPORT')} className="w-full p-4 bg-slate-900 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-black transition-all shadow-xl" disabled={isGenerating}>
+               {isGenerating ? 'AI 작성 중...' : '✨ 신규 주간 보고 자동 생성'}
+             </button>
+             {project.weeklyReports.map(r => (
+               <div key={r.id} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-50">
+                    <span className="font-bold text-slate-800">{r.date} 주간 보고</span>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{project.manager}</span>
+                 </div>
+                 <div className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">{r.content}</div>
+               </div>
+             ))}
            </div>
         )}
 
         {activeTab === 'RETRO' && (
-           <div className="bg-white p-8 rounded-xl border border-slate-200 shadow-sm max-w-4xl mx-auto">
-             <div className="flex justify-between items-center mb-6">
-               <h3 className="text-xl font-bold text-slate-800">프로젝트 회고 (Post-mortem)</h3>
-               <button 
-                 onClick={() => handleAutoGenerate('RETROSPECTIVE')}
-                 className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 font-bold shadow-md transition-all flex items-center gap-2"
-                 disabled={isGenerating}
-               >
-                 {isGenerating ? '분석 중...' : '✨ AI 회고 생성'}
+           <div className="bg-white p-6 md:p-10 rounded-2xl border border-slate-200 shadow-sm max-w-4xl mx-auto space-y-6">
+             <div className="flex justify-between items-center">
+               <h3 className="text-xl font-bold text-slate-800">회고 (Post-mortem)</h3>
+               <button onClick={() => handleAutoGenerate('RETROSPECTIVE')} className="px-4 py-2 bg-green-600 text-white text-xs font-bold rounded-xl hover:bg-green-700 transition-all shadow-lg shadow-green-100" disabled={isGenerating}>
+                 {isGenerating ? 'AI 분석 중...' : '✨ AI 회고 분석'}
                </button>
              </div>
-             <div className="prose max-w-none">
-                {project.retrospective ? (
-                  <div className="p-8 bg-green-50/30 border border-green-100 rounded-xl text-sm leading-relaxed whitespace-pre-wrap text-slate-700 shadow-sm">{project.retrospective}</div>
-                ) : (
-                  <div className="text-center py-24 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/30">
-                    <span className="text-4xl block mb-4">💡</span>
-                    <p className="text-sm font-medium">프로젝트 완료 후 회고를 작성하거나 AI에게 요청하세요.</p>
-                  </div>
-                )}
+             <div className="p-6 md:p-8 bg-green-50/20 rounded-xl text-sm leading-relaxed text-slate-700 whitespace-pre-wrap border border-green-100">
+                {project.retrospective || '프로젝트 종료 후 성과와 개선점을 정리해보세요.'}
              </div>
            </div>
         )}
