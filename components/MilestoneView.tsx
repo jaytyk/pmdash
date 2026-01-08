@@ -14,6 +14,7 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
   const [ganttBaseDate, setGanttBaseDate] = useState(new Date());
   const [showAdd, setShowAdd] = useState(false);
   const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const [formTitle, setFormTitle] = useState('');
   const [formStart, setFormStart] = useState('');
@@ -26,6 +27,7 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
     setFormEnd(''); 
     setFormStatus('UPCOMING'); 
     setShowAdd(true); 
+    setShowDeleteConfirm(false);
   };
   
   const openEditModal = (m: Milestone) => { 
@@ -34,6 +36,7 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
     setFormStart(m.startDate); 
     setFormEnd(m.endDate); 
     setFormStatus(m.status); 
+    setShowDeleteConfirm(false);
   };
 
   const handleAdd = () => {
@@ -63,21 +66,13 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
     setEditingMilestone(null);
   };
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
+  const handleFinalDelete = () => {
     if (!editingMilestone) return;
-
-    // 브라우저 표준 confirm 대화상자 노출 확인
-    const isConfirmed = confirm('이 마일스톤을 삭제하시겠습니까?');
-    
-    if (isConfirmed) {
-      const targetId = editingMilestone.id;
-      const filteredList = milestones.filter(m => m.id !== targetId);
-      onUpdateMilestones(filteredList);
-      setEditingMilestone(null); // 삭제 후 모달 닫기
-    }
+    const targetId = editingMilestone.id;
+    const filteredList = milestones.filter(m => m.id !== targetId);
+    onUpdateMilestones(filteredList);
+    setEditingMilestone(null);
+    setShowDeleteConfirm(false);
   };
 
   const calendarDates = useMemo(() => {
@@ -226,15 +221,16 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
       {/* Basic Modal Implementation */}
       {(showAdd || editingMilestone) && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-scaleIn">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-scaleIn relative">
             <div className="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50">
               <h3 className="font-bold text-slate-800">{editingMilestone ? '마일스톤 수정' : '마일스톤 추가'}</h3>
               <button 
                 type="button"
-                onClick={() => {setShowAdd(false); setEditingMilestone(null);}} 
+                onClick={() => {setShowAdd(false); setEditingMilestone(null); setShowDeleteConfirm(false);}} 
                 className="text-slate-400 p-2 hover:bg-slate-200 rounded-full transition-colors"
               >✕</button>
             </div>
+            
             <div className="p-6 space-y-4">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">태스크명</label>
@@ -260,22 +256,41 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
                   </select>
                 </div>
               )}
+
               <div className="pt-2 space-y-2">
-                <button 
-                  type="button"
-                  onClick={editingMilestone ? handleSaveEdit : handleAdd} 
-                  className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100"
-                >
-                  {editingMilestone ? '업데이트' : '확인'}
-                </button>
-                {editingMilestone && (
-                  <button 
-                    type="button"
-                    onClick={handleDelete} 
-                    className="w-full py-2 text-xs text-red-500 font-bold hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
-                  >
-                    삭제하기
-                  </button>
+                {!showDeleteConfirm ? (
+                  <>
+                    <button 
+                      type="button"
+                      onClick={editingMilestone ? handleSaveEdit : handleAdd} 
+                      className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100"
+                    >
+                      {editingMilestone ? '업데이트' : '확인'}
+                    </button>
+                    {editingMilestone && (
+                      <button 
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(true)} 
+                        className="w-full py-2 text-xs text-red-500 font-bold hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+                      >
+                        삭제하기
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-red-50 p-4 rounded-2xl space-y-3 animate-slideDown border border-red-100">
+                    <p className="text-[11px] text-red-600 font-bold text-center">정말 이 마일스톤을 삭제하시겠습니까?</p>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={handleFinalDelete}
+                        className="flex-1 py-2 bg-red-500 text-white text-xs font-bold rounded-lg hover:bg-red-600 shadow-md"
+                      >삭제 진행</button>
+                      <button 
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="flex-1 py-2 bg-white text-slate-400 text-xs font-bold rounded-lg border border-slate-200"
+                      >취소</button>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

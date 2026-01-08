@@ -17,6 +17,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MILESTONES' | 'CHARTER' | 'REPORT' | 'RETRO'>('OVERVIEW');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditingHeader, setIsEditingHeader] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   
   const [editedName, setEditedName] = useState(project.name);
   const [editedDescription, setEditedDescription] = useState(project.description);
@@ -31,6 +32,11 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
   const handleSaveHeader = () => {
     onUpdate({ ...project, name: editedName, description: editedDescription, manager: editedManager, startDate: editedStartDate, endDate: editedEndDate });
     setIsEditingHeader(false);
+  };
+
+  const handleConfirmDelete = () => {
+    onDelete(project.id);
+    setShowDeleteModal(false);
   };
 
   const handleAutoGenerate = async (type: any) => {
@@ -93,7 +99,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
           <div className="pt-2">
             <button 
               type="button"
-              onClick={() => onDelete(project.id)}
+              onClick={(e) => { e.preventDefault(); setShowDeleteModal(true); }}
               className="w-full py-2 px-4 border border-red-100 text-red-500 text-[10px] font-black uppercase tracking-tighter rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center gap-2 group"
             >
               <span className="group-hover:scale-110 transition-transform">🗑️</span> 프로젝트 삭제
@@ -102,7 +108,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
         </div>
       </div>
 
-      {/* Tabs Menu - Horizontal Scroll on Mobile */}
+      {/* Tabs Menu */}
       <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar bg-slate-50/50 -mx-4 px-4 sticky top-0 md:top-[72px] lg:top-0 z-30">
         {[
           { id: 'OVERVIEW', label: '개요', icon: '📝' },
@@ -208,6 +214,41 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
            </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl animate-scaleIn border border-red-50">
+            <div className="p-8 text-center space-y-6">
+              <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-4xl mx-auto animate-pulse">
+                ⚠️
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold text-slate-900">프로젝트를 삭제할까요?</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  이 프로젝트와 관련된 모든 마일스톤, 요구사항, 보고서 데이터가 영구적으로 삭제되며 복구할 수 없습니다.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3">
+                <button 
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="w-full py-4 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 transition-all shadow-lg shadow-red-100 active:scale-95"
+                >
+                  네, 모두 삭제합니다
+                </button>
+                <button 
+                  type="button"
+                  onClick={() => setShowDeleteModal(false)}
+                  className="w-full py-3 text-sm font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
+                >
+                  아니오, 취소할게요
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

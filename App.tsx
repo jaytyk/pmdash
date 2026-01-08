@@ -44,17 +44,13 @@ const App: React.FC = () => {
   };
 
   const handleDeleteProject = (id: string) => {
-    // window.confirm을 명시적으로 호출하여 브라우저 대화상자 보장
-    const isConfirmed = window.confirm('이 프로젝트와 관련된 모든 데이터(마일스톤, 보고서 등)가 영구적으로 삭제됩니다. 정말 삭제하시겠습니까?');
-    
-    if (isConfirmed) {
-      setState(prev => ({
-        ...prev,
-        projects: prev.projects.filter(p => p.id !== id),
-        selectedProjectId: null,
-        activeView: 'DASHBOARD'
-      }));
-    }
+    // 실제 삭제 로직 실행
+    setState(prev => ({
+      ...prev,
+      projects: prev.projects.filter(p => p.id !== id),
+      selectedProjectId: null,
+      activeView: 'DASHBOARD'
+    }));
   };
 
   const handleUpdateStatus1 = (newList: string[]) => {
