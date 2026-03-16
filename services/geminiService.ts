@@ -1,7 +1,16 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
+const getApiKey = () => {
+  const key = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  if (!key || key === 'undefined') {
+    console.warn("Gemini API Key가 설정되지 않았습니다. .env 파일을 확인해주세요.");
+    return "NO_API_KEY";
+  }
+  return key;
+};
+
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 export const generateTemplate = async (
   type: 'CHARTER' | 'REQUIREMENTS' | 'WEEKLY_REPORT' | 'RETROSPECTIVE',

@@ -19,18 +19,24 @@ export const INITIAL_STATUS2 = [
 // Helper to get consistent colors for status 1
 export const getStatus1Color = (status: string) => {
   const upper = status.toUpperCase();
-  if (upper.includes('TODO') || upper.includes('대기')) return 'bg-slate-200 text-slate-700 border-slate-300';
-  if (upper.includes('PROGRESS') || upper.includes('진행')) return 'bg-blue-100 text-blue-700 border-blue-300';
-  if (upper.includes('DONE') || upper.includes('완료')) return 'bg-green-100 text-green-700 border-green-300';
-  return 'bg-purple-100 text-purple-700 border-purple-300'; // Default for custom
+  if (upper.includes('DONE') || upper.includes('완료') || upper.includes('종료')) 
+    return 'bg-slate-100 text-slate-500 border-slate-200 font-medium';
+  
+  if (upper.includes('TODO') || upper.includes('대기') || upper.includes('준비')) 
+    return 'bg-amber-50 text-amber-700 border-amber-200 font-bold';
+  
+  if (upper.includes('PROGRESS') || upper.includes('진행')) 
+    return 'bg-blue-600 text-white border-blue-700 font-bold shadow-sm';
+  
+  return 'bg-indigo-50 text-indigo-700 border-indigo-200 font-bold'; // Default for custom
 };
 
 export const getStatus1ChartColor = (status: string) => {
   const upper = status.toUpperCase();
-  if (upper.includes('TODO') || upper.includes('대기')) return '#94a3b8';
-  if (upper.includes('PROGRESS') || upper.includes('진행')) return '#3b82f6';
-  if (upper.includes('DONE') || upper.includes('완료')) return '#22c55e';
-  return '#a855f7';
+  if (upper.includes('DONE') || upper.includes('완료') || upper.includes('종료')) return '#94a3b8'; // slate-400
+  if (upper.includes('TODO') || upper.includes('대기') || upper.includes('준비')) return '#f59e0b'; // amber-500
+  if (upper.includes('PROGRESS') || upper.includes('진행')) return '#2563eb'; // blue-600
+  return '#6366f1'; // indigo-500
 };
 
 // 현재 날짜를 기준으로 테스트 데이터를 생성하기 위한 헬퍼

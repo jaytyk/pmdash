@@ -1,16 +1,27 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { Project, AppState } from '../types';
 
 interface SettingsProps {
+  projects: Project[];
   customStatus1: string[];
   customStatus2: string[];
   onUpdate1: (newList: string[]) => void;
   onUpdate2: (newList: string[]) => void;
+  onImport: (state: Partial<AppState>) => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ customStatus1, customStatus2, onUpdate1, onUpdate2 }) => {
+export const Settings: React.FC<SettingsProps> = ({ 
+  projects, 
+  customStatus1, 
+  customStatus2, 
+  onUpdate1, 
+  onUpdate2,
+  onImport
+}) => {
   const [newStatus1, setNewStatus1] = useState('');
   const [newStatus2, setNewStatus2] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleAdd1 = () => {
     if (newStatus1 && !customStatus1.includes(newStatus1)) {
@@ -34,11 +45,73 @@ export const Settings: React.FC<SettingsProps> = ({ customStatus1, customStatus2
     if (customStatus2.length > 1) onUpdate2(customStatus2.filter(s => s !== status));
   };
 
+  const handleExport = () => {
+    const data = {
+      projects,
+      customStatus1,
+      customStatus2,
+      exportDate: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `PM_Master_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (confirm('현재 모든 데이터가 덮어씌워집니다. 계속하시겠습니까?')) {
+          onImport(json);
+        }
+      } catch (err) {
+        alert('올바른 JSON 형식이 아닙니다.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-fadeIn">
-      <header>
-        <h2 className="text-3xl font-bold">워크플로우 설정</h2>
-        <p className="text-slate-500">조직의 관리 체계에 맞춰 프로젝트 상태 구조를 커스텀하세요.</p>
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold">시스템 설정</h2>
+          <p className="text-slate-500">워크플로우 관리 및 데이터 백업/복구</p>
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={handleExport}
+            className="flex-1 md:flex-none px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-all text-sm border border-slate-200"
+          >
+            📤 데이터 내보내기
+          </button>
+          <button 
+            onClick={handleImportClick}
+            className="flex-1 md:flex-none px-4 py-2 bg-blue-50 text-blue-600 rounded-xl font-bold hover:bg-blue-100 transition-all text-sm border border-blue-100"
+          >
+            📥 데이터 가져오기
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            accept=".json" 
+            className="hidden" 
+          />
+        </div>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

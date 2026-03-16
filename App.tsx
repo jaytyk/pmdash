@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Dashboard } from './components/Dashboard';
 import { ProjectDetail } from './components/ProjectDetail';
@@ -7,16 +7,43 @@ import { Settings } from './components/Settings';
 import { AppState, Project } from './types';
 import { MOCK_PROJECTS, INITIAL_STATUS1, INITIAL_STATUS2 } from './constants';
 
+const STORAGE_KEY = 'PM_MASTER_DATA';
+
 const App: React.FC = () => {
-  const [state, setState] = useState<AppState>({
-    projects: MOCK_PROJECTS as Project[],
-    customStatus1: INITIAL_STATUS1,
-    customStatus2: INITIAL_STATUS2,
-    selectedProjectId: null,
-    activeView: 'DASHBOARD'
+  const [state, setState] = useState<AppState>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return {
+          ...parsed,
+          activeView: 'DASHBOARD', // Always start at dashboard
+          selectedProjectId: null
+        };
+      } catch (e) {
+        console.error('Failed to parse saved data', e);
+      }
+    }
+    return {
+      projects: MOCK_PROJECTS as Project[],
+      customStatus1: INITIAL_STATUS1,
+      customStatus2: INITIAL_STATUS2,
+      selectedProjectId: null,
+      activeView: 'DASHBOARD'
+    };
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Save to localStorage whenever projects or statuses change
+  useEffect(() => {
+    const dataToSave = {
+      projects: state.projects,
+      customStatus1: state.customStatus1,
+      customStatus2: state.customStatus2
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [state.projects, state.customStatus1, state.customStatus2]);
 
   const handleSelectProject = (id: string | null) => {
     setState(prev => ({ 
@@ -27,10 +54,10 @@ const App: React.FC = () => {
     setIsSidebarOpen(false); // 모바일에서 선택 시 닫기
   };
 
-  const handleNavigate = (view: 'DASHBOARD' | 'SETTINGS') => {
+  const handleNavigate = (view: 'DASHBOARD' | 'SETTINGS' | 'PROJECT_DETAIL') => {
     setState(prev => ({ 
       ...prev, 
-      activeView: view, 
+      activeView: view as any, 
       selectedProjectId: null 
     }));
     setIsSidebarOpen(false); // 모바일에서 선택 시 닫기
@@ -44,7 +71,6 @@ const App: React.FC = () => {
   };
 
   const handleDeleteProject = (id: string) => {
-    // 실제 삭제 로직 실행
     setState(prev => ({
       ...prev,
       projects: prev.projects.filter(p => p.id !== id),
@@ -59,6 +85,18 @@ const App: React.FC = () => {
 
   const handleUpdateStatus2 = (newList: string[]) => {
     setState(prev => ({ ...prev, customStatus2: newList }));
+  };
+
+  const handleImportData = (importedState: Partial<AppState>) => {
+    setState(prev => ({
+      ...prev,
+      projects: importedState.projects || prev.projects,
+      customStatus1: importedState.customStatus1 || prev.customStatus1,
+      customStatus2: importedState.customStatus2 || prev.customStatus2,
+      activeView: 'DASHBOARD',
+      selectedProjectId: null
+    }));
+    alert('데이터를 성공적으로 불러왔습니다.');
   };
 
   const selectedProject = state.projects.find(p => p.id === state.selectedProjectId);
@@ -110,10 +148,12 @@ const App: React.FC = () => {
 
           {state.activeView === 'SETTINGS' && (
             <Settings 
+              projects={state.projects}
               customStatus1={state.customStatus1}
               customStatus2={state.customStatus2} 
               onUpdate1={handleUpdateStatus1}
               onUpdate2={handleUpdateStatus2} 
+              onImport={handleImportData}
             />
           )}
         </div>

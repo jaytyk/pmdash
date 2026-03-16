@@ -56,33 +56,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, status1List, sta
     return result;
   }, [status1FilteredProjects, selectedStatuses2]);
 
-  const csvEscape = (str: string | undefined) => {
-    if (!str) return '""';
-    return `"${str.replace(/"/g, '""')}"`;
-  };
-
   const handleExport = () => {
-    const csvRows: string[] = [];
-    const headers = ['구분', '항목/날짜', '상태/기한', '상세 내용/PM', '비고'];
-    csvRows.push('\ufeff' + headers.join(','));
-
-    displayProjects.forEach(p => {
-      csvRows.push([csvEscape('PROJECT'), csvEscape(p.name), csvEscape(`${p.status1} / ${p.status2}`), csvEscape(p.manager), csvEscape(`${p.startDate} ~ ${p.endDate}`)].join(','));
-      if (p.requirements) csvRows.push([csvEscape('REQUIREMENTS'), csvEscape('상세 요구사항'), csvEscape('-'), csvEscape(p.requirements), csvEscape('-')].join(','));
-      p.milestones.forEach((m, idx) => csvRows.push([csvEscape('MILESTONE'), csvEscape(`${idx + 1}. ${m.title}`), csvEscape(m.status), csvEscape(p.manager), csvEscape(`${m.startDate} ~ ${m.endDate}`)].join(',')));
-      if (p.charter) csvRows.push([csvEscape('CHARTER'), csvEscape('프로젝트 차터'), csvEscape('-'), csvEscape(p.charter), csvEscape('-')].join(','));
-      p.weeklyReports.forEach(report => csvRows.push([csvEscape('WEEKLY_REPORT'), csvEscape(report.date), csvEscape('보고완료'), csvEscape(report.content), csvEscape(p.manager)].join(',')));
-      if (p.retrospective) csvRows.push([csvEscape('RETROSPECTIVE'), csvEscape('최종 회고'), csvEscape('완료'), csvEscape(p.retrospective), csvEscape('-')].join(','));
-      csvRows.push(',,,,');
-    });
-
-    const csvContent = csvRows.join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const data = {
+      projects,
+      customStatus1: status1List,
+      customStatus2: status2List,
+      exportDate: new Date().toISOString()
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `Project_Full_Report_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `PM_Master_Full_Backup_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
+    URL.revokeObjectURL(url);
   };
 
   const onPieClick = (data: any) => {
@@ -242,17 +229,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ projects, status1List, sta
             <tbody className="divide-y divide-slate-50 text-sm">
               {displayProjects.map(p => (
                 <tr key={p.id} onClick={() => onSelect(p.id)} className="group hover:bg-blue-50/30 cursor-pointer transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-slate-700 group-hover:text-blue-600 truncate max-w-[200px]">{p.name}</div>
-                    <div className="text-[11px] text-slate-400">{p.manager}</div>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-slate-100 text-[10px] font-bold text-slate-500 rounded uppercase">
-                      {p.status2}
+                  <td className="px-6 py-5">
+                    <div className="font-bold text-slate-800 group-hover:text-blue-600 truncate max-w-[250px] text-base mb-0.5">{p.name}</div>
+                    <div className="text-xs text-slate-400 flex items-center gap-2">
+                      <span className="font-medium text-slate-600">{p.manager}</span>
+                      <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+                      <span>{p.startDate} ~ {p.endDate}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right font-mono text-[10px] text-slate-400 whitespace-nowrap">
-                    {p.startDate} ~ {p.endDate}
+                  <td className="px-6 py-5 text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      <div className={`px-3 py-1 rounded-full text-[11px] border ${getStatus1Color(p.status1)}`}>
+                        {p.status1}
+                      </div>
+                      <div className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
+                        {p.status2}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-5 text-right">
+                    <button className="p-2 text-slate-300 group-hover:text-blue-500 transition-colors">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                    </button>
                   </td>
                 </tr>
               ))}
