@@ -56,7 +56,8 @@ export const Settings: React.FC<SettingsProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `PM_Master_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '');
+    link.download = `PM_Master_Backup_${timestamp}.json`;
     link.click();
     URL.revokeObjectURL(url);
   };
