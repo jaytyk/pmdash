@@ -60,6 +60,11 @@ export const MOCK_PROJECTS = [
       { id: 'm1', title: '인프라 구축 완료', startDate: getISO(-5), endDate: getISO(5), status: 'COMPLETED' },
       { id: 'm2', title: '모델 파인튜닝', startDate: getISO(10), endDate: getISO(25), status: 'UPCOMING' }
     ],
+    tasks: [
+      { id: 't1', parentStatus2: '개발', title: '데이터 전처리 스크립트 작성', isCompleted: true, dueDate: getISO(-2) },
+      { id: 't2', parentStatus2: '개발', title: '모델 API 서버 구축', isCompleted: false, dueDate: getISO(5) },
+      { id: 't3', parentStatus2: '요구사항취합', title: '현업 담당자 인터뷰', isCompleted: true, dueDate: getISO(-8) }
+    ],
     weeklyReports: [],
   }
 ];

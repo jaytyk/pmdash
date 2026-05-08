@@ -9,10 +9,20 @@ export interface Project {
   startDate: string;
   endDate: string;
   milestones: Milestone[];
+  tasks: WbsTask[]; // WBS Task Level (3rd depth)
   charter?: string;
   requirements?: string;
   weeklyReports: WeeklyReport[];
   retrospective?: string;
+}
+
+export interface WbsTask {
+  id: string;
+  parentStatus2: string; // Linking to the 2nd level status
+  title: string;
+  isCompleted: boolean;
+  startDate?: string;
+  dueDate?: string;
 }
 
 export interface Milestone {

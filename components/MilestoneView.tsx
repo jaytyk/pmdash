@@ -51,13 +51,13 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
       endDate: formEnd, 
       status: 'UPCOMING' 
     };
-    onUpdateMilestones([...milestones, newMilestone]);
+    onUpdateMilestones([...(milestones || []), newMilestone]);
     setShowAdd(false);
   };
 
   const handleSaveEdit = () => {
     if (!editingMilestone) return;
-    const updatedList = milestones.map(m => 
+    const updatedList = (milestones || []).map(m => 
       m.id === editingMilestone.id 
         ? { ...m, title: formTitle, startDate: formStart, endDate: formEnd, status: formStatus } 
         : m
@@ -69,7 +69,7 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
   const handleFinalDelete = () => {
     if (!editingMilestone) return;
     const targetId = editingMilestone.id;
-    const filteredList = milestones.filter(m => m.id !== targetId);
+    const filteredList = (milestones || []).filter(m => m.id !== targetId);
     onUpdateMilestones(filteredList);
     setEditingMilestone(null);
     setShowDeleteConfirm(false);
@@ -160,7 +160,7 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {milestones.map(m => (
+              {(milestones || []).map(m => (
                 <tr key={m.id} onClick={() => openEditModal(m)} className="text-sm group hover:bg-slate-50 cursor-pointer transition-colors">
                   <td className="py-4 px-2 font-bold text-slate-700">{m.title}</td>
                   <td className="py-4 px-2 text-center">
@@ -186,7 +186,7 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
                  <div key={i} className={`bg-slate-50/50 min-h-[100px] p-2 rounded-xl border border-white transition-all hover:bg-white hover:shadow-sm ${date.getMonth() !== viewDate.getMonth() ? 'opacity-30' : ''}`}>
                     <span className="text-[10px] font-bold text-slate-500">{date.getDate()}</span>
                     <div className="mt-1 space-y-1">
-                      {milestones.map(m => {
+                      {(milestones || []).map(m => {
                         const mS = new Date(m.startDate); const mE = new Date(m.endDate);
                         if (date >= mS && date <= mE) return <div key={m.id} onClick={() => openEditModal(m)} className="p-1 text-[8px] font-bold bg-blue-500 text-white rounded truncate cursor-pointer hover:bg-blue-600 transition-colors">{m.title}</div>;
                         return null;
@@ -206,7 +206,7 @@ export const MilestoneView: React.FC<MilestoneViewProps> = ({ milestones, onUpda
                  {ganttConfig.units.map((u, i) => <span key={i} className="text-[9px] font-bold text-slate-400">{u}</span>)}
                </div>
              </div>
-             {milestones.map(m => (
+             {(milestones || []).map(m => (
                <div key={m.id} className="flex items-center gap-4 cursor-pointer group" onClick={() => openEditModal(m)}>
                  <div className="w-40 truncate text-sm font-bold text-slate-700 group-hover:text-blue-600 transition-colors">{m.title}</div>
                  <div className="flex-1 h-8 bg-slate-50 rounded-lg relative overflow-hidden border border-slate-100 shadow-inner">

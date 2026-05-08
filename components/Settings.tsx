@@ -1,6 +1,72 @@
 
 import React, { useState, useRef } from 'react';
 import { Project, AppState } from '../types';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+interface SortableItemProps {
+  id: string;
+  index: number;
+  onRemove: (id: string) => void;
+  variant: 'blue' | 'slate';
+}
+
+const SortableItem: React.FC<SortableItemProps> = ({ id, index, onRemove, variant }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : 'auto',
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const borderClass = variant === 'blue' ? 'hover:border-blue-200' : 'hover:border-slate-300';
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100 group transition-all ${borderClass} ${isDragging ? 'shadow-lg ring-2 ring-blue-500/20' : ''}`}
+    >
+      <div className="flex items-center gap-4 flex-1">
+        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500">
+          ⠿
+        </div>
+        <span className="text-xs font-bold text-slate-300">#{index + 1}</span>
+        <span className={`font-bold text-slate-700 ${variant === 'slate' ? 'font-medium' : ''}`}>{id}</span>
+      </div>
+      <button
+        onClick={() => onRemove(id)}
+        className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 px-2"
+      >
+        삭제
+      </button>
+    </div>
+  );
+};
 
 interface SettingsProps {
   projects: Project[];
@@ -22,6 +88,31 @@ export const Settings: React.FC<SettingsProps> = ({
   const [newStatus1, setNewStatus1] = useState('');
   const [newStatus2, setNewStatus2] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd1 = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = customStatus1.indexOf(active.id as string);
+      const newIndex = customStatus1.indexOf(over.id as string);
+      onUpdate1(arrayMove(customStatus1, oldIndex, newIndex));
+    }
+  };
+
+  const handleDragEnd2 = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = customStatus2.indexOf(active.id as string);
+      const newIndex = customStatus2.indexOf(over.id as string);
+      onUpdate2(arrayMove(customStatus2, oldIndex, newIndex));
+    }
+  };
 
   const handleAdd1 = () => {
     if (newStatus1 && !customStatus1.includes(newStatus1)) {
@@ -135,20 +226,20 @@ export const Settings: React.FC<SettingsProps> = ({
             </button>
           </div>
           <div className="space-y-2">
-            {customStatus1.map((s, idx) => (
-              <div key={idx} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100 group hover:border-blue-200 transition-all">
-                <div className="flex items-center gap-4">
-                  <span className="text-xs font-bold text-slate-300">#{idx + 1}</span>
-                  <span className="font-bold text-slate-700">{s}</span>
-                </div>
-                <button 
-                  onClick={() => handleRemove1(s)}
-                  className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                >
-                  삭제
-                </button>
-              </div>
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd1}
+            >
+              <SortableContext
+                items={customStatus1}
+                strategy={verticalListSortingStrategy}
+              >
+                {customStatus1.map((s, idx) => (
+                  <SortableItem key={s} id={s} index={idx} onRemove={handleRemove1} variant="blue" />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
 
@@ -171,20 +262,20 @@ export const Settings: React.FC<SettingsProps> = ({
             </button>
           </div>
           <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-            {customStatus2.map((s, idx) => (
-              <div key={idx} className="flex justify-between items-center p-4 bg-slate-50 rounded-xl border border-slate-100 group hover:border-slate-300 transition-all">
-                <div className="flex items-center gap-4">
-                  <span className="text-xs font-bold text-slate-300">#{idx + 1}</span>
-                  <span className="font-medium text-slate-700">{s}</span>
-                </div>
-                <button 
-                  onClick={() => handleRemove2(s)}
-                  className="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                >
-                  삭제
-                </button>
-              </div>
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd2}
+            >
+              <SortableContext
+                items={customStatus2}
+                strategy={verticalListSortingStrategy}
+              >
+                {customStatus2.map((s, idx) => (
+                  <SortableItem key={s} id={s} index={idx} onRemove={handleRemove2} variant="slate" />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
       </div>

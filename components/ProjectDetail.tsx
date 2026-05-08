@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { Project, Milestone, ViewType, ScaleType } from '../types';
+import { Project, Milestone, ViewType, ScaleType, WbsTask } from '../types';
 import { MilestoneView } from './MilestoneView';
+import { WbsView } from './WbsView';
 import { generateTemplate } from '../services/geminiService';
 import { getStatus1Color } from '../constants';
 
@@ -14,7 +15,7 @@ interface ProjectDetailProps {
 }
 
 export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate, onDelete, status1Options, status2Options }) => {
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'MILESTONES' | 'CHARTER' | 'REPORT' | 'RETRO'>('OVERVIEW');
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'WBS' | 'MILESTONES' | 'CHARTER' | 'REPORT' | 'RETRO'>('OVERVIEW');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditingHeader, setIsEditingHeader] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -71,12 +72,32 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
           {!isEditingHeader ? (
             <p className="text-slate-500 text-sm leading-relaxed">{project.description}</p>
           ) : (
-            <div className="space-y-4 animate-slideDown">
-              <input value={editedName} onChange={e => setEditedName(e.target.value)} className="w-full p-2.5 text-sm border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="프로젝트명" />
-              <textarea value={editedDescription} onChange={e => setEditedDescription(e.target.value)} className="w-full p-2.5 text-sm border border-blue-200 rounded-xl h-24 outline-none focus:ring-2 focus:ring-blue-500" placeholder="설명" />
-              <div className="flex justify-end gap-2">
-                <button onClick={() => setIsEditingHeader(false)} className="px-4 py-2 text-xs font-bold text-slate-400">취소</button>
-                <button onClick={handleSaveHeader} className="px-4 py-2 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">저장</button>
+            <div className="space-y-4 animate-slideDown bg-slate-50/50 p-4 rounded-xl border border-blue-100">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">프로젝트명</label>
+                <input value={editedName} onChange={e => setEditedName(e.target.value)} className="w-full p-2.5 text-sm border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="프로젝트명" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">설명</label>
+                <textarea value={editedDescription} onChange={e => setEditedDescription(e.target.value)} className="w-full p-2.5 text-sm border border-blue-200 rounded-xl bg-white h-24 outline-none focus:ring-2 focus:ring-blue-500" placeholder="설명" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">담당 PM</label>
+                  <input value={editedManager} onChange={e => setEditedManager(e.target.value)} className="w-full p-2.5 text-sm border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none" placeholder="담당 PM" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">시작일</label>
+                  <input type="date" value={editedStartDate} onChange={e => setEditedStartDate(e.target.value)} className="w-full p-2.5 text-sm border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">마감예정</label>
+                  <input type="date" value={editedEndDate} onChange={e => setEditedEndDate(e.target.value)} className="w-full p-2.5 text-sm border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setIsEditingHeader(false)} className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-slate-600">취소</button>
+                <button onClick={handleSaveHeader} className="px-6 py-2 text-xs font-bold bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">저장</button>
               </div>
             </div>
           )}
@@ -112,6 +133,7 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
       <div className="flex border-b border-slate-200 overflow-x-auto no-scrollbar bg-slate-50/50 -mx-4 px-4 sticky top-0 md:top-[72px] lg:top-0 z-30">
         {[
           { id: 'OVERVIEW', label: '개요', icon: '📝' },
+          { id: 'WBS', label: 'WBS', icon: '🌳' },
           { id: 'MILESTONES', label: '마일스톤', icon: '📅' },
           { id: 'CHARTER', label: '차터', icon: '📜' },
           { id: 'REPORT', label: '보고', icon: '📊' },
@@ -132,27 +154,62 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
       <div className="min-h-[400px]">
         {activeTab === 'OVERVIEW' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-slate-800">상세 요구사항</h3>
-                <button onClick={() => handleAutoGenerate('REQUIREMENTS')} className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg uppercase tracking-tighter hover:bg-blue-100 transition-colors" disabled={isGenerating}>
-                  {isGenerating ? 'AI 분석 중...' : '✨ AI 생성'}
-                </button>
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold text-slate-800">현재 공정 WBS 요약</h3>
+                  <button onClick={() => setActiveTab('WBS')} className="text-xs text-blue-600 font-bold hover:underline">상세보기 →</button>
+                </div>
+                <div className="space-y-2">
+                  {(project.tasks || []).filter(t => t.parentStatus2 === project.status2).length > 0 ? (
+                    (project.tasks || []).filter(t => t.parentStatus2 === project.status2).slice(0, 5).map(task => (
+                      <div key={task.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className={`w-2 h-2 rounded-full ${task.isCompleted ? 'bg-green-500' : 'bg-slate-300'}`} />
+                        <span className={`text-sm ${task.isCompleted ? 'text-slate-400 line-through' : 'text-slate-700'}`}>{task.title}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-slate-400 text-sm italic py-4">현재 단계에 등록된 작업이 없습니다.</div>
+                  )}
+                </div>
               </div>
-              <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 min-h-[200px] text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
-                {project.requirements || '등록된 요구사항이 없습니다. AI를 통해 초안을 작성해보세요.'}
+
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-bold text-slate-800">상세 요구사항</h3>
+                  <button onClick={() => handleAutoGenerate('REQUIREMENTS')} className="text-[10px] font-black text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg uppercase tracking-tighter hover:bg-blue-100 transition-colors" disabled={isGenerating}>
+                    {isGenerating ? 'AI 분석 중...' : '✨ AI 생성'}
+                  </button>
+                </div>
+                <div className="bg-slate-50 p-5 rounded-xl border border-slate-100 min-h-[200px] text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+                  {project.requirements || '등록된 요구사항이 없습니다. AI를 통해 초안을 작성해보세요.'}
+                </div>
               </div>
             </div>
             
             <div className="space-y-6">
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <h3 className="font-bold text-slate-800 mb-4">프로젝트 정보</h3>
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative group">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-slate-800">프로젝트 정보</h3>
+                  {!isEditingHeader && (
+                    <button 
+                      onClick={() => {
+                        setIsEditingHeader(true);
+                        // Scroll to top to see the edit UI
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }} 
+                      className="text-[10px] font-bold text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      정보 수정
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-4">
                   {[
                     { label: '담당 PM', val: project.manager },
                     { label: '시작일', val: project.startDate },
                     { label: '마감예정', val: project.endDate },
-                    { label: '주간보고', val: `${project.weeklyReports.length}회 작성됨` }
+                    { label: '주간보고', val: `${(project.weeklyReports || []).length}회 작성됨` }
                   ].map((item, i) => (
                     <div key={i} className="flex justify-between items-end border-b border-slate-50 pb-2">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</span>
@@ -165,8 +222,16 @@ export const ProjectDetail: React.FC<ProjectDetailProps> = ({ project, onUpdate,
           </div>
         )}
 
+        {activeTab === 'WBS' && (
+          <WbsView 
+            project={project} 
+            status2Options={status2Options} 
+            onUpdateTasks={(newTasks) => onUpdate({...project, tasks: newTasks})} 
+          />
+        )}
+
         {activeTab === 'MILESTONES' && (
-          <MilestoneView milestones={project.milestones} onUpdateMilestones={(newList) => onUpdate({...project, milestones: newList})} />
+          <MilestoneView milestones={project.milestones || []} onUpdateMilestones={(newList) => onUpdate({...project, milestones: newList})} />
         )}
 
         {activeTab === 'CHARTER' && (

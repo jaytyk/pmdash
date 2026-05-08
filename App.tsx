@@ -15,8 +15,24 @@ const App: React.FC = () => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        // Ensure projects have necessary array fields
+        const upgradedProjects = (parsed.projects || []).map((p: any) => ({
+          ...p,
+          name: p.name || 'Untitled Project',
+          manager: p.manager || 'N/A',
+          description: p.description || '',
+          status1: p.status1 || (parsed.customStatus1?.[0] || 'TODO'),
+          status2: p.status2 || (parsed.customStatus2?.[0] || '준비중'),
+          startDate: p.startDate || new Date().toISOString().split('T')[0],
+          endDate: p.endDate || new Date().toISOString().split('T')[0],
+          milestones: p.milestones || [],
+          tasks: p.tasks || [],
+          weeklyReports: p.weeklyReports || []
+        }));
+        
         return {
           ...parsed,
+          projects: upgradedProjects,
           activeView: 'DASHBOARD', // Always start at dashboard
           selectedProjectId: null
         };
@@ -125,8 +141,8 @@ const App: React.FC = () => {
       />
       
       {/* Main Content Area */}
-      <main className={`flex-1 transition-all duration-300 p-4 md:p-8 lg:p-12 lg:ml-64`}>
-        <div className="max-w-7xl mx-auto">
+      <main className={`flex-1 transition-all duration-300 p-6 md:p-12 lg:p-20 xl:p-24 lg:ml-64`}>
+        <div className="max-w-[1400px] mx-auto">
           {state.activeView === 'DASHBOARD' && (
             <Dashboard 
               projects={state.projects} 
@@ -173,6 +189,7 @@ const App: React.FC = () => {
               startDate: new Date().toISOString().split('T')[0],
               endDate: new Date().toISOString().split('T')[0],
               milestones: [],
+              tasks: [],
               weeklyReports: []
             };
             setState(prev => ({ ...prev, projects: [...prev.projects, newProj] }));
